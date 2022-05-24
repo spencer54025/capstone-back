@@ -115,30 +115,26 @@ def delete_user(id):
     db.session.commit()
     return jsonify('that user has vanished')
 
-@app.route('/user/update/<id>', methods=["PUT"])
-def update_user(id):
+@app.route('/user/update/<username>/<email>', methods=["PUT"])
+def update_user(username, email):
     if request.content_type != 'application/json':
         return jsonify('data must be json')
 
-    updated_data = request.get_json()
-    username = updated_data.get('username')
-    password = updated_data.get('password')
-    email = updated_data.get('email')
-    user_type = updated_data.get('user_type')
+    user = db.session.query(User).filter(User.username == username).filter(User.email == email).first()
 
-    book_to_update = db.session.query(Book).filter(Book.id == id).first()
+    if user != None:
+        updated_data = request.get_json()
+        password = updated_data.get('password')
 
-    if username != None:
-        book_to_update.username = username
-    if password != None:
-        book_to_update.password = password
-    if email != None:
-        book_to_update.email = email
-    if user_type != None:
-        book_to_update.user_type = user_type
+        user_to_update = db.session.query(User).filter(User.username == username).first()
 
-    db.session.commit()
-    return jsonify(book_schema.dump(book_to_update))
+        if password != None:
+            user_to_update.password = password
+
+        db.session.commit()
+        return jsonify(book_schema.dump(user_to_update), 'user was updated')
+    else:
+        return jsonify('user was not found')
 
 @app.route('/user/verify', methods=["POST"])
 def verification():
@@ -234,7 +230,7 @@ def update_book(id):
     author = updated_data.get('author')
     price = updated_data.get('price')
     genre = updated_data.get('genre')
-    img = update_book.get('img')
+    img = updated_data.get('img')
 
     book_to_update = db.session.query(Book).filter(Book.id == id).first()
 
@@ -250,6 +246,7 @@ def update_book(id):
         book_to_update.genre = genre
     if img != None:
         book_to_update.img = img
+
 
     db.session.commit()
     return jsonify(book_schema.dump(book_to_update))
